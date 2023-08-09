@@ -12,6 +12,10 @@ You must use `npm i` then `npm start` in the terminal to run the application.
 
 Here is a walk-through version on how the application operates.
 
+https://github.com/a-monroy99/employee-tracker/assets/125234279/d91f6b8f-236d-4a91-a043-c5147db7999c
+
+
+
 ## Credits
 
 N/A
