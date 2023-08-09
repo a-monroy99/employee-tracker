@@ -17,7 +17,7 @@ const db = mysql.createConnection(
 
 async function queryRoles() {
   return new Promise((resolve, reject) => {
-    db.query("SELECT * FROM roles", function(err, res) {
+    db.query("SELECT * FROM roles", function(err, results) {
       if (err) return reject(err);
       resolve(results);
     })
@@ -26,7 +26,7 @@ async function queryRoles() {
 
 async function queryEmployees() {
   return new Promise((resolve, reject) => {
-    db.query("SELECT * FROM employees", function(err, res) {
+    db.query("SELECT * FROM employees", function(err, results) {
       if (err) return reject(err);
       resolve(results);
     })
@@ -59,6 +59,7 @@ function primaryPrompt() {
       case "view all departments":
         db.query("SELECT * FROM departments", function (err, res) {
           console.table(res)
+          primaryPrompt();
         });
       break;
   
@@ -66,6 +67,7 @@ function primaryPrompt() {
         db.promise().query("SELECT * FROM roles")
       .then(([rows, fields]) => {
         console.table(rows)
+        primaryPrompt();
       })
       break;
   
@@ -73,6 +75,7 @@ function primaryPrompt() {
         db.promise().query("SELECT * FROM employees")
         .then(([rows, fiels]) => {
           console.table(rows)
+          primaryPrompt();
         })
       break;
   
@@ -88,7 +91,7 @@ function primaryPrompt() {
         promptEmployeeInfo();
       break;
 
-      case "update an employee":
+      case "update an employee role":
         promptUpdateEmployee();
       break;
     }
@@ -117,6 +120,7 @@ function primaryPrompt() {
         db.promise().query("SELECT * FROM departments")
         .then(([rows, fields]) => {
           console.table(rows)
+          primaryPrompt();
         })
     })
   };
@@ -148,13 +152,14 @@ function primaryPrompt() {
         db.promise().query("SELECT * FROM roles")
         .then(([rows, fields]) => {
           console.table(rows)
+          primaryPrompt();
         })
     })
   };
 
   async function promptEmployeeInfo() {
     const roles = await queryRoles()
-    const employees = await queryEmployees()
+    console.log(roles)
       inquirer.prompt([
         {
           type: 'input',
@@ -170,7 +175,7 @@ function primaryPrompt() {
           type: 'list',
           name: 'role',
           message: 'Which Role ID?',
-          choices: res.map((role) => ({name: role.title, value: role.id}))
+          choices: roles.map((roles) => ({name: roles.title, value: roles.id}))
         },
         {
           type: 'input',
@@ -194,22 +199,11 @@ function primaryPrompt() {
         )
         })
     }
-    
-    // .then((answers) => {
-
-    //   db.promise().query(`INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES ("${answers.first}", "${answers.last}", "${answers.role}", "${answers.manager}")`)
-    //    .catch((err) => {
-    //     console.error(err);
-    //    });
-    //     db.promise().query("SELECT * FROM employees")
-    //     .then(([rows, fields]) => {
-    //       console.table(rows)
-    //     })
-    // })
-    // }
 
   async function promptUpdateEmployee() {
     const employees = await queryEmployees();
+    const roles = await queryRoles()
+    console.log(employees)
 
     inquirer.prompt([
       {
@@ -220,11 +214,28 @@ function primaryPrompt() {
       },
       {
         type: 'list',
-        name: 'role',
-        message: 'Which Role ID?',
-        choices: res.map((role) => ({name: role.title, value: role.id}))
+        name: 'roleId',
+        message: 'What is the updated role?',
+        choices: roles.map((roles) => ({name: roles.title, value: roles.id}))
       }
     ])
+    .then((answers) => {
+      db.query(
+        "UPDATE employees SET ? WHERE ?",
+        [
+          {
+            role_id: answers.roleId,
+          },
+          {
+            id: answers.employeesToUpdate
+          }
+        ],
+        function (err) {
+          if (err) throw err;
+          primaryPrompt()
+        }
+      )
+      })
   };
 
 primaryPrompt();
